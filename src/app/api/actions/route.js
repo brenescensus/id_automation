@@ -33,3 +33,17 @@ export async function POST(request) {
     await prisma.$disconnect();
   }
 }
+
+export async function GET(){
+  try{
+    const results =await prisma.company.findMany();
+    console.log(results)
+    return NextResponse.json(results,{status:201})
+
+  }
+  catch(error){
+
+console.error("Error saving data:", error.message);
+    return NextResponse.json({ error: "Error saving data" }, { status: 500 });
+  }
+}

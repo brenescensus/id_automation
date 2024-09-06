@@ -19,7 +19,8 @@
     "next-connect": "^1.0.0",
     "react": "^18",
     "react-cloudinary-upload-widget": "^2.0.0",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-table": "^7.8.0"
   },
   "devDependencies": {
     "eslint": "^8",

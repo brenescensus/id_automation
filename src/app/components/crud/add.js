@@ -50,7 +50,7 @@ export default function UploadForm() {
     //   setFormData((prevState) => ({
     //     ...prevState,
     //     imageUrl: data.secure_url,
-    //   }));
+    //   })); 
 
       const data = await response.json();
       if (data.secure_url) {
