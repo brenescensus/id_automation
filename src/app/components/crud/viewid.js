@@ -1,113 +1,101 @@
+
 "use client";
-import { React, useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useTable } from 'react-table';
 
-export default function ViewIdDetails() {
+export default function ViewId() {
   const [compids, setCompids] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(5); // Items per page
-  const [sortConfig, setSortConfig] = useState({ key: "id", direction: "ascending" });
-
-  const fetchCompids = async () => {
-    try {
-      const response = await fetch("api/actions");
-      const data = await response.json();
-      setCompids(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const [searchInput, setSearchInput] = useState(""); // State for search input
 
   useEffect(() => {
+    const fetchCompids = async () => {
+      try {
+        const response = await fetch("api/actions");
+        const data = await response.json();
+        setCompids(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
     fetchCompids();
   }, []);
 
-  // Pagination logic
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = compids.slice(indexOfFirstRow, indexOfLastRow);
+  // Filtered data based on search input
+  const filteredData = useMemo(() => {
+    return compids.filter(item =>
+      item.fullname.toLowerCase().includes(searchInput.toLowerCase()) ||
+      item.id_number.toLowerCase().includes(searchInput.toLowerCase()) ||
+      item.employee_id.toLowerCase().includes(searchInput.toLowerCase())
+    );
+  }, [compids, searchInput]);
 
-  const totalPages = Math.ceil(compids.length / rowsPerPage);
+  // Memoized columns array
+  const columns = useMemo(
+    () => [
+      { Header: "ID", accessor: "id" },
+      { Header: "FullName", accessor: "fullname" },
+      { Header: "Designation", accessor: "designation" },
+      { Header: "Department", accessor: "department" },
+      { Header: "ID Number", accessor: "id_number" },
+      { Header: "Employment Number", accessor: "employee_id" },
+      {
+        Header: "Profile Image",
+        accessor: "profileImage",
+        Cell: ({ value }) => (
+          <img src={value} alt="Profile" className="h-10 w-10 rounded-full object-cover" />
+        ),
+      },
+    ],
+    []
+  );
 
-  // Sorting logic
-  const handleSort = (key) => {
-    let direction = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending";
-    }
-    setSortConfig({ key, direction });
-    const sortedData = [...compids].sort((a, b) => {
-      if (a[key] < b[key]) return direction === "ascending" ? -1 : 1;
-      if (a[key] > b[key]) return direction === "ascending" ? 1 : -1;
-      return 0;
-    });
-    setCompids(sortedData);
-  };
+  const tableInstance = useTable({ columns, data: filteredData }); // Use filtered data
+
+  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = tableInstance;
 
   return (
     <section className="container mt-10">
       <h2 className="text-xl font-bold mb-4">Posts</h2>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white">
-          <thead>
-            <tr className="bg-blue-900 text-white">
-              {[
-                { key: "id", label: "ID" },
-                { key: "fullname", label: "FullName" },
-                { key: "designation", label: "Designation" },
-                { key: "department", label: "Department" },
-                { key: "id_number", label: "ID Number" },
-                { key: "employee_id", label: "Employment Number" },
-              ].map(({ key, label }) => (
-                <th
-                  key={key}
-                  className="w-1/6 py-2 px-4 cursor-pointer"
-                  onClick={() => handleSort(key)}
-                >
-                  {label} {sortConfig.key === key && (sortConfig.direction === "ascending" ? "▲" : "▼")}
-                </th>
-              ))}
-              <th className="w-1/12 py-2 px-4">Profile Image</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white text-black">
-            {currentRows.map((ids) => (
-              <tr key={ids.id} className="text-center">
-                <td className="border px-4 py-2">{ids.id}</td>
-                <td className="border px-4 py-2">{ids.fullname}</td>
-                <td className="border px-4 py-2">{ids.designation}</td>
-                <td className="border px-4 py-2">{ids.department}</td>
-                <td className="border px-4 py-2">{ids.id_number}</td>
-                <td className="border px-4 py-2">{ids.employee_id}</td>
-                <td className="border px-4 py-2">
-                  <img
-                    src={ids.profileImage}
-                    alt={`${ids.fullname}'s profile`}
-                    className="h-10 w-10 rounded-full object-cover"
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      {/* Search Input */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search by Full Name, ID Number, or Employee ID"
+          className="p-2 border border-gray-400 rounded w-full"
+        />
       </div>
 
-      {/* Pagination */}
-      <div className="flex justify-center mt-4">
-        <button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          className="px-4 py-2 mx-1 bg-blue-500 text-white rounded disabled:bg-gray-300"
-        >
-          Previous
-        </button>
-        <span className="px-4 py-2">{currentPage} of {totalPages}</span>
-        <button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-          disabled={currentPage === totalPages}
-          className="px-4 py-2 mx-1 bg-blue-500 text-white rounded disabled:bg-gray-300"
-        >
-          Next
-        </button>
+      <div className="overflow-x-auto">
+        <table {...getTableProps()} className="min-w-full bg-white">
+          <thead>
+            {headerGroups.map((headerGroup) => (
+              <tr {...headerGroup.getHeaderGroupProps()} className="bg-blue-900 text-white">
+                {headerGroup.headers.map((column) => (
+                  <th {...column.getHeaderProps()} className="w-1/6 py-2 px-4">
+                    {column.render("Header")}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody {...getTableBodyProps()} className="bg-white text-black">
+            {rows.map((row) => {
+              prepareRow(row);
+              return (
+                <tr {...row.getRowProps()} className="text-center">
+                  {row.cells.map((cell) => (
+                    <td {...cell.getCellProps()} className="border px-4 py-2">
+                      {cell.render("Cell")}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </section>
   );
